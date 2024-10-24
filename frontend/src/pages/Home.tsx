@@ -13,7 +13,7 @@ import { useFetcher } from '@/hooks/useFetcher'
 
 const formSchema = z.object({
     email: z.string().email({ message: "Invalid email address" }),
-    serviceType: z.enum(["API", "REDIS", "PGSQL", "MYSQL", "MONGODB"], {
+    serviceType: z.enum(["API", "REDIS", "PGSQL"], {
         required_error: "Please select a service type",
     }),
     interval: z.number().default(30),

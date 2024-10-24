@@ -8,10 +8,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pencil, Trash2, Check, X, Loader2 } from 'lucide-react'
 import { useFetcher } from '@/hooks/useFetcher'
 import { useToast } from '@/hooks/use-toast'
+import MusicFile from '@/assets/tmp_z5b93np.mp3'
 import { useNavigate, useParams } from 'react-router-dom'
-const mockData = Array.from({ length: 50 }, (_, i) => ({
+const mockData = Array.from({ length: 10 }, (_, i) => ({
     id: i + 1,
-    url: `https://example${i + 1}.com`
+    url: `https://example${i + 1}.com`,
+    serviceType: "API"
 }))
 
 const urlSchema = z.object({
@@ -23,7 +25,11 @@ type URLData = z.infer<typeof urlSchema> & { id: number }
 export default function Dashboard() {
     const { email } = useParams()
     const navigate = useNavigate()
-    const [data, setData] = useState<URLData[]>(mockData)
+    const [data, setData] = useState<{
+        id: number
+        url:string
+        serviceType: string
+    }[]>(mockData)
     const [currentPage, setCurrentPage] = useState(1)
     const [isLoading, setIsLoading] = useState(false)
     const [editingId, setEditingId] = useState<number | null>(null)
@@ -34,7 +40,7 @@ export default function Dashboard() {
     const form = useForm<URLData>({
         resolver: zodResolver(urlSchema)
     })
-
+    
     const onDelete = async (id: number) => {
         try {
             const response = await useFetcher(`/api/delete/${id}`, {  method: 'DELETE'})
@@ -117,7 +123,6 @@ export default function Dashboard() {
                 variant: "destructive"
             })
             setIsLoading(false)
-
         }
 
     }
@@ -163,6 +168,7 @@ export default function Dashboard() {
                         <TableRow key={item.id}>
                             <TableCell className="font-medium">{item.id}</TableCell>
                             <TableCell>
+                                
                                 {editingId === item.id ? (
                                     <form onSubmit={(e) => { e.preventDefault(); onSave(item.id); }}>
                                         <Input
@@ -174,15 +180,25 @@ export default function Dashboard() {
                                         )}
                                     </form>
                                 ) : (
-                                    item.url
+                                    item.serviceType.trim().toLowerCase() ? <>
+                                    <a className='hover:underline cursor-pointer  text-blue-600'
+                                    href={item.url} target="_blank" rel="noreferrer">{item.url}</a></> 
+                                    :
+                                     <>{item.url}</>
                                 )}
                             </TableCell>
                             <TableCell className="text-right">
                                 {editingId === item.id ? (
                                     <>
-                                        <Button variant="ghost" size="sm" onClick={() => onSave(item.id)}>
-                                            {!isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-
+                                        <Button variant="ghost" size="sm" onClick={isLoading?()=>{
+                                            new Audio(MusicFile).play()
+                                            toast({
+                                                title: "Ruko Zara Sbhar Kro",
+                                                description: "Please wait for the previous request to complete",
+                                                variant: "destructive"
+                                            })
+                                        }:() => onSave(item.id)}>
+                                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}                                           
                                         </Button>
                                         <Button variant="ghost" size="sm" onClick={onCancel}>
                                             <X className="h-4 w-4" />

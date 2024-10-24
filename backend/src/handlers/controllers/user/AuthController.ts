@@ -3,7 +3,8 @@ import { InjectRepository } from "@/factory/typeorm";
 import { CronJob } from "@/utils/decorators/cron-job.decorator";
 import type { Request, Response } from "express";
 import axios from 'axios'
-
+import Redis from 'redis'
+import { Pool } from 'pg';
 
 class AuthController {
 
@@ -61,9 +62,42 @@ class AuthController {
     @CronJob("EVERY_10_SECONDS")
     async CronJobFunction() {
         const data = await InjectRepository(CollectionEntity).find()
-        data.length > 0 &&   data.map((data) => {
-            axios.get(data.url)
+        data.length > 0 && data.map(async (data) => {
+            if (data.serviceType.trim().toLowerCase() === "api") {
+                axios.get(data.url)
+                return
+            }
+            if (data.serviceType.trim().toLowerCase() === "redis") {
+                const redisClient = Redis.createClient({ url: data.url });
+                await redisClient.ping();
+                return
+            }
+            if (data.serviceType.trim().toLowerCase() === "pgsql") {
+                const pool = new Pool(this.parsePostgresUrl(data.url));
+                const result = await pool.query('SELECT NOW()');
+                return
+            }
         })
+    }
+    private parsePostgresUrl(url: string) {
+        // Use URL constructor to parse the PostgreSQL URL
+        const parsedUrl = new URL(url);
+
+        // Extract necessary parts from the parsed URL
+        const user = parsedUrl.username;
+        const password = parsedUrl.password;
+        const host = parsedUrl.hostname;
+        const port = Number(parsedUrl.port);
+        const database = parsedUrl.pathname.replace('/', '');
+        // Return the connection object
+        return {
+            user,
+            password,
+            host,
+            port,
+            database,
+            ssl: parsedUrl.searchParams.get('sslmode') === 'require',
+        };
     }
 }
 
